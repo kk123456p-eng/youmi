@@ -2,7 +2,6 @@ import streamlit as st
 from openai import OpenAI
 import random
 
-# 页面基础配置
 st.set_page_config(
     page_title="AI智能食谱生成器",
     page_icon="🍳",
@@ -10,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 治愈语录：兼顾年轻人+宝妈
+# 治愈语录，适配年轻人 & 宝妈
 healing_quotes = [
     "好好吃饭，是送给自己最简单的浪漫✨",
     "忙碌生活里，一顿热饭就能治愈所有疲惫",
@@ -22,7 +21,6 @@ healing_quotes = [
     "累了就歇一会，美食永远在等你呀🥰"
 ]
 
-# 软萌可爱清新CSS
 custom_css = """
 <style>
     .main {
@@ -89,7 +87,6 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 页面标题
 st.markdown("<h1>🍳 AI 智能食谱生成器</h1>",unsafe_allow_html=True)
 st.markdown('<p class="subtitle">输入手边食材，一键生成暖心家常菜谱</p>',unsafe_allow_html=True)
 
@@ -104,7 +101,7 @@ with st.container():
         st.session_state.current_quote = random.choice(healing_quotes)
     st.markdown("</div>",unsafe_allow_html=True)
 
-# DeepSeek API
+# API初始化
 try:
     client = OpenAI(
         api_key=st.secrets["API_KEY"],
@@ -113,11 +110,9 @@ try:
 except Exception as e:
     st.error(f"API密钥读取失败：{e}")
 
-# 食材输入框
 food_input = st.text_input("🥬 请输入食材，多个食材使用英文逗号分隔", placeholder="例如：鸡蛋,番茄,青椒,土豆")
 generate_btn = st.button("✨ 生成暖心菜谱")
 
-# 生成菜谱逻辑
 if generate_btn:
     if not food_input.strip():
         st.warning("⚠️ 请至少输入一种食材哦！")
@@ -156,5 +151,4 @@ if generate_btn:
             except Exception as err:
                 st.error(f"出错啦：{err}")
 
-# 底部作者署名
-st.markdown('<p class="author-footer">作者：youku-youmi</p>',unsafe_allow_html=True)
+st.markdown('<p class="author-footer">作者：youku‑youmi</p>',unsafe_allow_html=True)
