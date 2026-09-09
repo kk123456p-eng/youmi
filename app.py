@@ -1,42 +1,37 @@
 import streamlit as st
-import requests
+from openai import OpenAI
 
-# 页面配置
-st.set_page_config(page_title="食谱生成器", page_icon="🍳")
-st.title("🍳 AI 食谱生成器")
-st.write("输入你有的食材，AI 帮你生成菜谱！")
+st.set_page_config(page_title="AI食谱生成器")
+st.title("🍳 AI食谱生成器")
+st.write("输入你有的食材，AI帮你生成菜谱！")
 
-# 从 Streamlit Secrets 读取API密钥
-api_key = st.secrets["API_KEY"]
-base_url = "https://api.deepseek.com/v1"
+# 从secrets读取API密钥
+try:
+    client = OpenAI(
+        api_key=st.secrets["API_KEY"],
+        base_url="https://api.deepseek.com" # DeepSeek接口地址，必不可少
+    )
+except Exception as e:
+    st.error(f"读取密钥失败：{e}")
 
-# 用户输入框
-ingredients = st.text_area("你有哪些食材？（用逗号分隔）", placeholder="例如：鸡蛋, 番茄, 葱")
+food_input = st.text_input("你有哪些食材？（用逗号分隔）")
+generate_btn = st.button("生成食谱")
 
-if st.button("生成食谱"):
-    if not ingredients:
-        st.warning("请先输入食材")
+if generate_btn:
+    if not food_input.strip():
+        st.warning("请输入食材！")
     else:
-        with st.spinner("AI 正在思考..."):
+        prompt = f"""根据给出食材，生成一份完整家常菜菜谱。
+食材：{food_input}
+输出包含：菜名、食材清单、详细步骤、小贴士。"""
+        with st.spinner("正在生成菜谱，请稍等..."):
             try:
-                response = requests.post(
-                    f"{base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": "你是一个专业厨师，根据用户提供的食材，给出详细的菜谱，包括菜名、用料、步骤。"},
-                            {"role": "user", "content": f"我有这些食材：{ingredients}，请给我一个菜谱"}
-                        ],
-                        "temperature": 0.7
-                    }
+                response = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[{"role": "user", "content": prompt}]
                 )
-                result = response.json()
-                recipe = result["choices"][0]["message"]["content"]
-                st.success("生成完成！")
-                st.markdown(recipe)
-            except Exception as e:
-                st.error(f"出错了：{str(e)}")
+                result = response.choices[0].message.content
+                st.success("✅ 菜谱生成完成")
+                st.write(result)
+            except Exception as err:
+                st.error(f"出错了：{err}")
