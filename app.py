@@ -26,29 +26,47 @@ healing_quotes = [
     "享受下厨，享受属于你的时光✨"
 ]
 
+# 【路明非 龙族雨夜伤感背景｜Streamlit‑Cloud海外可用】
 custom_css = """
 <style>
-.main {
-    /* 龙族‑路明非伤感氛围感：冷蓝紫暗调治愈渐变 */
-    background: linear-gradient(180deg, #192038 0%, #232b4d 40%, #2c2e4e 100%);
-    color:#e2e4f3;
+[data-testid="stAppViewContainer"] > .main {
+    background-image: url("https://p3‑flow‑image‑sign.byteimg.com/tos‑cn‑i‑a9rns2rl98/34220103093b40389212442411402311~tplv‑a9rns2rl98‑image.image");
+    background‑size: cover;
+    background‑position: center;
+    background‑repeat: no‑repeat;
+    background‑attachment: fixed;
+    background‑color: rgba(8, 10, 22, 0.72);
+    background‑blend‑mode: multiply;
+    color:#e0e4f8;
 }
 .stApp {
-    color:#e2e4f3;
+    color:#e0e4f8;
 }
-.block-container {
-    padding-top: 2rem;
-    max-width:960px;
+.block‑container {
+    padding‑top: 2rem;
+    max‑width:1050px;
 }
-.warning-notice{color:#ff8888; font-weight:bold;}
-div[data-testid="stExpander"]{
-    background-color: rgba(255,255,255,0.06) !important;
+.warning‑notice{color:#ff8888; font‑weight:bold;}
+div[data‑testid="stExpander"]{
+    background‑color: rgba(24, 28, 48, 0.58) !important;
+    backdrop‑filter: blur(5px);
 }
-div[data-testid="stVerticalBlock"]{
-    gap:0.6rem;
+div[data‑testid="stVerticalBlock"]{
+    gap:0.7rem;
 }
 .stMarkdown h1,.stMarkdown h2,.stMarkdown h3{
-    color:#cbd0f7 !important;
+    color:#c7cdf7 !important;
+}
+[data‑testid="stSidebar"] {
+    background‑color: rgba(16,19,36,0.68);
+}
+.stButton>button {
+    background‑color: rgba(60,70,110,0.65);
+    color:#e6e9ff;
+    border:1px solid #707cb8;
+}
+.stButton>button:hover {
+    background‑color: rgba(90,100,160,0.8);
 }
 </style>
 """
@@ -56,7 +74,11 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # 读取密钥
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
-DASHSCOPE_API_KEY = st.secrets["DASHSCOPE_API_KEY"]
+# 海外平台不要开启图片，DASHSCOPE_API_KEY可保留不删除
+if "DASHSCOPE_API_KEY" in st.secrets:
+    DASHSCOPE_API_KEY = st.secrets["DASHSCOPE_API_KEY"]
+else:
+    DASHSCOPE_API_KEY = ""
 
 # ========== 数据库 ==========
 def init_db():
@@ -322,7 +344,7 @@ action_sec_per_unit = {
 
 sport_music_categories = {
     "💔极致伤感纯音乐":[
-        {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song‑05.mp3"},
+        {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑05.mp3"},
         {"name":"孤寂夜晚弦乐","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑06.mp3"},
         {"name":"落寞抒情钢琴曲","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑07.mp3"},
     ],
@@ -461,7 +483,7 @@ def extract_dish_name(text):
     except:
         return ""
 
-# ========== 图片生成（wanx‑v1） ==========
+# ========== 图片生成（海外平台默认关闭，打开会网络报错） ==========
 def gen_dish_image(dish_name, img_style):
     if not DASHSCOPE_API_KEY or not dish_name:
         return None
@@ -486,7 +508,7 @@ def gen_dish_image(dish_name, img_style):
         resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image‑synthesis",headers=headers,json=body,timeout=30)
         resp.raise_for_status()
         task_id = resp.json()["output"]["task_id"]
-        for _ in range(60):
+        for _ in range(20):
             time.sleep(2)
             tr = requests.get(f"https://dashscope.aliyuncs.com/api/v1/tasks/{task_id}",headers=headers,timeout=20)
             tr.raise_for_status()
@@ -496,10 +518,10 @@ def gen_dish_image(dish_name, img_style):
             if data["output"]["task_status"] == "FAILED":
                 st.warning(f"图片失败:{data.get('output',{}).get('message','')}")
                 return None
-        st.warning("图片生成超时")
+        st.warning("图片生成超时，海外平台不建议开启")
         return None
     except Exception as e:
-        st.error(f"图片接口异常：{str(e)}")
+        st.error(f"图片接口异常（海外平台网络限制）：{str(e)}")
         return None
 
 def download_img_from_url(url):
@@ -512,7 +534,7 @@ def download_img_from_url(url):
 # ========== 侧边栏开关 ==========
 with st.sidebar:
     st.header("⚙️设置")
-    enable_img = st.checkbox("开启菜品图片生成", value=False, help="海外平台容易失败，国内魔搭可开启")
+    enable_img = st.checkbox("开启菜品图片生成", value=False, help="Streamlit‑Cloud海外服务器网络受限，开启大概率报错！")
 
 # ========== 主页面 ==========
 st.title("🍽️ YouKu AI食谱生成器")
@@ -579,9 +601,9 @@ with tab_main:
                     if img_bytes:
                         st.download_button("🖼️下载菜品图片",data=img_bytes,file_name=f"{dish_out}.jpg",mime="image/jpeg")
                 else:
-                    st.warning("图片生成失败")
+                    st.warning("图片生成失败，海外平台请关闭图片开关")
             else:
-                st.info("图片功能已关闭，侧边栏开启（国内魔搭环境可用）")
+                st.info("图片功能已关闭（Streamlit‑Cloud海外不建议开启）")
         if dish_out:
             save_recipe_to_db(dish_out,food_input,recipe_out,img_out)
             st.success("✅菜谱已保存进历史！")
@@ -619,7 +641,7 @@ with tab_reverse:
                 else:
                     st.warning("图片生成失败")
             else:
-                st.info("图片功能已关闭，在侧边栏开启")
+                st.info("图片功能已关闭")
 
 with tab_history:
     st.subheader("📚历史菜谱库")
@@ -704,7 +726,7 @@ with tab_diet:
                 if find_rec:
                     cal = estimate_dish_calorie(dname, find_rec[3])
                 if cal is None:
-                    cal = st.number_input(f"【{dname}】AI估算失败，请手动填热量(大卡)",value=350,key=f"cal_{dname}")
+                    cal = st.number_input(f"【{dname}】AI估算失败，请手动填热量(大卡)",value=350.0,key=f"cal_{dname}")
                 plan_dish_data.append({"dish":dname,"cal":cal})
                 total_intake += cal
         st.markdown(f"✅今日菜品总预估摄入热量：**{round(total_intake)} 大卡**")
@@ -762,10 +784,10 @@ with tab_diet:
         st.info("该运动不支持组数模式，请使用运动时长计算")
 
     sport_cal = 0.0
-    sport_min = 0
+    sport_min = 0.0
 
     if calc_mode == "⏱️按运动时长(分钟)":
-        sport_min = st.number_input("运动时长(分钟)",min_value=0,max_value=300,value=timer_minutes)
+        sport_min = st.number_input("运动时长(分钟)",min_value=0.0,max_value=300.0,value=timer_minutes, step=0.1)
         sport_cal = calc_sport_cal(sport_sel, weight_in, sport_min)
         if btn_apply:
             sport_min = timer_minutes
