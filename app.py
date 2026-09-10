@@ -77,6 +77,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+# =========【重点】初始化数据库，提前建表！！=========
+init_db()
+
 def save_recipe_to_db(dish_name, ingredients, recipe_content, image_url):
     conn = sqlite3.connect("youku_recipe.db")
     c = conn.cursor()
@@ -195,7 +198,7 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
     avoid_text = f"**严禁使用以下食材：{','.join(avoid_list)}**，菜谱全程不能出现这些食材。" if avoid_list else ""
     prompt = f"""根据食材生成一份详细中式菜谱，严格按下面格式输出：
 【菜名】
-食材（{person_num}人份）：
+食材（{person_num}）：
 做法步骤：
 小贴士：
 🍱营养参考（仅估算，不作为医疗依据）：热量、蛋白质简单描述。
@@ -217,7 +220,7 @@ def estimate_dish_calorie(dish_name, recipe_text):
     prompt = f"""下面是菜品【{dish_name}】的菜谱，请只输出估算总热量数值（单位大卡kcal），只返回数字，不要多余文字：
 {recipe_text}"""
     payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     try:
         res = requests.post("https://api.deepseek.com/v1/chat/completions",headers=headers,json=payload,timeout=30)
         res.raise_for_status()
@@ -229,14 +232,14 @@ def estimate_dish_calorie(dish_name, recipe_text):
 
 def reverse_query_dish(dish_name, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
-    prompt = f"""菜名：{dish_name}，{person_num}人份。{avoid_text}
+    prompt = f"""菜名：{dish_name}，{person_num}。{avoid_text}
 输出格式：
 【所需准备食材】
 【完整菜谱步骤】
 【营养参考（仅估算，不作医疗依据）】"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -247,16 +250,16 @@ def reverse_query_dish(dish_name, avoid_list, person_num):
 
 def random_generate_recipe(cuisine,taste,avoid_list,person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
-    prompt = f"""随机生成一道全新家常菜，菜系{cuisine}，口味{taste}，{person_num}人份。{avoid_text}
+    prompt = f"""随机生成一道全新家常菜，菜系{cuisine}，口味{taste}，{person_num}。{avoid_text}
 严格输出格式：
 【菜名】
 食材：
 做法步骤：
 小贴士：
 🍱营养参考（仅估算，不作为医疗依据）"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -288,12 +291,12 @@ def gen_dish_image(dish_name, img_style):
     prompt = f"{style_map[img_style]}，菜品「{dish_name}」"
     headers = {
         "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
-        "Content‑Type":"application/json",
-        "X‑DashScope‑Async":"enable"
+        "Content-Type":"application/json",
+        "X-DashScope-Async":"enable"
     }
-    body = {"model":"z‑image‑turbo","input":{"prompt":prompt},"parameters":{"size":"1024*1024","n":1}}
+    body = {"model":"z-image-turbo","input":{"prompt":prompt},"parameters":{"size":"1024*1024","n":1}}
     try:
-        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image‑synthesis",headers=headers,json=body,timeout=30)
+        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",headers=headers,json=body,timeout=30)
         resp.raise_for_status()
         task_id = resp.json()["output"]["task_id"]
         for _ in range(60):
@@ -322,7 +325,7 @@ def download_img_from_url(url):
 # ========== 主页面 ==========
 st.title("🍽️ YouKu AI食谱生成器")
 quote = random.choice(healing_quotes)
-st.markdown(f"<p style='text‑align:center; color:#5b6b8c; font‑size:18px'>{quote}</p>",unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; color:#5b6b8c; font-size:18px'>{quote}</p>",unsafe_allow_html=True)
 
 tab_main, tab_reverse, tab_history, tab_diet = st.tabs(["✨食材生成菜谱","🔍菜名反查食材","📚历史菜谱","📅每日饮食&热量计划"])
 
@@ -371,7 +374,7 @@ with tab_main:
             st.subheader("📖菜谱结果")
             st.markdown(recipe_out)
             st.code(recipe_out,language="markdown")
-            buf_txt = BytesIO(recipe_out.encode("utf‑8"))
+            buf_txt = BytesIO(recipe_out.encode("utf-8"))
             st.download_button("📄下载菜谱TXT",data=buf_txt,file_name=f"{dish_out}.txt",mime="text/plain")
         with col_b:
             st.subheader("🍽️菜品图片")
@@ -407,7 +410,7 @@ with tab_reverse:
         with ca:
             st.markdown(rev_result)
             st.code(rev_result,language="markdown")
-            buf_rev = BytesIO(rev_result.encode("utf‑8"))
+            buf_rev = BytesIO(rev_result.encode("utf-8"))
             st.download_button("📄下载TXT",data=buf_rev,file_name=f"{rev_name}.txt")
         with cb:
             if rev_name:
@@ -442,7 +445,7 @@ with tab_history:
                     st.markdown(f"**原始输入食材：**{ing}")
                     st.markdown(content)
                     st.code(content,language="markdown")
-                    buf_h = BytesIO(content.encode("utf‑8"))
+                    buf_h = BytesIO(content.encode("utf-8"))
                     st.download_button("📄下载TXT",data=buf_h,file_name=f"{dish}.txt",key=f"htxt_{rid}")
                     if st.button(f"{star_text}切换收藏状态",key=f"fav_{rid}"):
                         toggle_favorite(rid)
@@ -459,7 +462,7 @@ with tab_history:
 with tab_diet:
     st.markdown("# 📅每日饮食计划 · 热量体重估算")
     st.markdown("<p class='warning-notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
-    today_str = datetime.now().strftime("%Y‑%m‑%d")
+    today_str = datetime.now().strftime("%Y-%m-%d")
     st.info(f"📆今日日期：{today_str}")
 
     st.subheader("👤填写你的身体指标")
@@ -473,9 +476,9 @@ with tab_diet:
 
     act_map = {
         "久坐几乎不动":1.2,
-        "轻度活动(每周1‑3次运动)":1.375,
-        "中度活动(每周3‑5次)":1.55,
-        "高强度(每周6‑7次)":1.725,
+        "轻度活动(每周1-3次运动)":1.375,
+        "中度活动(每周3-5次)":1.55,
+        "高强度(每周6-7次)":1.725,
         "重体力劳动":1.9
     }
     act_sel = st.selectbox("日常身体活动水平",list(act_map.keys()))
@@ -507,7 +510,7 @@ with tab_diet:
                 total_intake += cal
         st.markdown(f"✅今日菜品总预估摄入热量：**{round(total_intake)} 大卡**")
         for item in plan_dish_data:
-            st.markdown(f"‑ {item['dname']}：{item['cal']} kcal")
+            st.markdown(f"- {item['dish']}：{item['cal']} kcal")
 
     st.divider()
     st.subheader("🏃今日运动记录")
@@ -522,10 +525,10 @@ with tab_diet:
     total_out = total_body_daily + sport_cal
     net_cal = total_intake - total_out
 
-    st.markdown(f"‑ 身体日常消耗(TDEE)：{total_body_daily} kcal")
-    st.markdown(f"‑ 运动额外消耗：{sport_cal} kcal")
-    st.markdown(f"‑ 今日吃进去总热量：{total_intake} kcal")
-    st.markdown(f"> 📌净热量(摄入‑总消耗)：**{round(net_cal)} kcal**")
+    st.markdown(f"- 身体日常消耗(TDEE)：{total_body_daily} kcal")
+    st.markdown(f"- 运动额外消耗：{sport_cal} kcal")
+    st.markdown(f"- 今日吃进去总热量：{total_intake} kcal")
+    st.markdown(f"> 📌净热量(摄入-总消耗)：**{round(net_cal)} kcal**")
 
     FAT_KG_CAL = 7700
     if net_cal > 0:
@@ -545,7 +548,7 @@ with tab_diet:
 
     st.divider()
     st.subheader("📂读取某天保存过的计划")
-    read_date = st.text_input("输入日期读取(格式2026‑09‑10)",today_str)
+    read_date = st.text_input("输入日期读取(格式2026-09-10)",today_str)
     if st.button("🔍读取记录"):
         row = get_diet_plan_by_date(read_date)
         if row:
@@ -557,7 +560,6 @@ with tab_diet:
         else:
             st.info("该日期没有保存计划记录")
 
-init_db()
 
 # 页脚作者
-st.markdown("<br><hr><p style='text‑align:center; color:#5b6b8c;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align:center; color:#5b6b8c;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
