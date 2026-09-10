@@ -5,6 +5,7 @@ import random
 import sqlite3
 from io import BytesIO
 from datetime import datetime
+import time as time_lib
 
 # ========== 页面全局配置 ==========
 st.set_page_config(
@@ -28,16 +29,27 @@ healing_quotes = [
 custom_css = """
 <style>
 .main {
-    background: linear-gradient(180deg, #f7f9ff 0%, #eef2ff 100%);
+    /* 龙族‑路明非伤感氛围感：冷蓝紫暗调治愈渐变 */
+    background: linear-gradient(180deg, #192038 0%, #232b4d 40%, #2c2e4e 100%);
+    color:#e2e4f3;
 }
 .stApp {
-    color:#2c333a;
+    color:#e2e4f3;
 }
 .block-container {
     padding-top: 2rem;
     max-width:960px;
 }
-.warning-notice{color:#d03b3b; font-weight:bold;}
+.warning-notice{color:#ff8888; font-weight:bold;}
+div[data-testid="stExpander"]{
+    background-color: rgba(255,255,255,0.06) !important;
+}
+div[data-testid="stVerticalBlock"]{
+    gap:0.6rem;
+}
+.stMarkdown h1,.stMarkdown h2,.stMarkdown h3{
+    color:#cbd0f7 !important;
+}
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -172,14 +184,191 @@ def calc_tdee(bmr, activity_factor):
     return round(bmr * activity_factor,1)
 
 sport_map = {
-    "快走(5km/h)": 3.5,
+    # ========= 步行 / 跑步类 =========
+    "慢走(4km/h)":3.3,
+    "快走(5‑6km/h)":3.8,
+    "健走(6.5km/h)":5.0,
     "慢跑(8km/h)":8.0,
-    "跳绳":10.0,
-    "骑行":6.0,
-    "游泳":9.0,
-    "力量健身训练":6.5,
-    "瑜伽":3.0
+    "跑步10km/h":10.0,
+    "快跑12km/h":12.5,
+    "爬楼梯上楼":8.0,
+    "下楼梯":3.5,
+
+    # ========= 骑行 =========
+    "休闲骑行(平地)":4.5,
+    "中等速度骑行":6.8,
+    "快速公路骑行":8.5,
+    "山地车上坡骑行":14.0,
+    "动感单车‑低强度":3.5,
+    "动感单车‑中强度":6.8,
+    "动感单车‑高强度间歇":11.0,
+
+    # ========= 游泳全系列 =========
+    "踩水休闲":4.0,
+    "慢速仰泳/自由泳":5.8,
+    "中速自由泳":8.0,
+    "蛙泳普通速度":10.0,
+    "快速自由泳":11.0,
+    "蝶泳":13.8,
+
+    # ========= 跳绳 =========
+    "慢速跳绳":8.8,
+    "中速跳绳":11.8,
+    "快速高强度跳绳":12.0,
+
+    # ========= 自重居家训练 =========
+    "俯卧撑(普通节奏带休息)":3.8,
+    "俯卧撑(快速高强度连续)":6.0,
+    "仰卧起坐(普通速度)":4.0,
+    "仰卧起坐(快速高强度)":6.5,
+    "卷腹/腹部收腹训练":4.2,
+    "平板支撑(静态维持)":3.5,
+    "自重深蹲(普通节奏)":4.0,
+    "自重深蹲(快速间歇)":6.2,
+    "臀桥臀部训练":3.6,
+    "引体向上(自重)":8.0,
+
+    # ========= 力量抗阻训练 =========
+    "轻度力量训练(慢节奏，休息久)":3.5,
+    "中等力量训练(哑铃/器械常规)":5.0,
+    "大重量力量训练(增肌，短休息)":6.0,
+    "大强度力量间歇训练":7.5,
+
+    # ========= HIIT、Tabata =========
+    "HIIT高强度间歇训练":9.5,
+    "Tabata塔巴塔训练":11.0,
+    "战绳训练":8.0,
+    "波比跳Burpee训练":8.0,
+    "开合跳间歇训练":8.0,
+
+    # ========= 瑜伽 / 普拉提 / 传统国术 =========
+    "哈他瑜伽(舒缓放松)":2.5,
+    "流瑜伽(动态)":4.0,
+    "空中瑜伽":5.5,
+    "普拉提基础":3.0,
+    "普拉提进阶":4.2,
+    "八段锦":3.2,
+    "24式太极拳":3.5,
+    "五禽戏":3.3,
+
+    # ========= 舞蹈 / 广场舞 /健身操 =========
+    "慢舞休闲":3.0,
+    "中速舞蹈":4.5,
+    "拉丁舞":5.8,
+    "普通广场舞":4.4,
+    "高强度健身操风格广场舞":7.2,
+    "第九套广播体操":5.1,
+    "初级有氧健身操":7.3,
+    "高级有氧健身操":9.0,
+
+    # ========= 球类运动 =========
+    "乒乓球休闲":4.0,
+    "羽毛球休闲娱乐":4.5,
+    "羽毛球比赛对抗":7.0,
+    "网球双打":6.0,
+    "网球单打":8.0,
+    "篮球休闲投篮":4.5,
+    "篮球全场比赛":8.0,
+    "排球休闲":4.0,
+    "排球比赛对抗":8.0,
+    "足球休闲玩耍":7.0,
+    "足球正式比赛":10.0,
+
+    # ========= 户外登山徒步 =========
+    "平路徒步":4.0,
+    "中等坡度爬山":6.0,
+    "陡坡登山背包负重":8.0,
+
+    # ========= 健身房器械其他 =========
+    "椭圆机‑中等强度":5.5,
+    "椭圆机‑高强度":7.2,
+    "划船机‑中等":5.8,
+    "划船机‑高强度":8.0,
+
+    # ========= 格斗搏击 =========
+    "拳击沙袋练习":8.0,
+    "散打搏击训练":9.0,
+
+    # ========= 居家家务 =========
+    "拖地擦地家务":3.3,
+    "搬轻重物做家务":4.5
 }
+
+countable_sports = {
+    "俯卧撑(普通节奏带休息)",
+    "俯卧撑(快速高强度连续)",
+    "仰卧起坐(普通速度)",
+    "仰卧起坐(快速高强度)",
+    "卷腹/腹部收腹训练",
+    "平板支撑(静态维持)",
+    "自重深蹲(普通节奏)",
+    "自重深蹲(快速间歇)",
+    "臀桥臀部训练",
+    "引体向上(自重)"
+}
+
+action_sec_per_unit = {
+    "俯卧撑(普通节奏带休息)":2.2,
+    "俯卧撑(快速高强度连续)":1.2,
+    "仰卧起坐(普通速度)":2.0,
+    "仰卧起坐(快速高强度)":1.1,
+    "卷腹/腹部收腹训练":1.8,
+    "平板支撑(静态维持)":60,
+    "自重深蹲(普通节奏)":1.8,
+    "自重深蹲(快速间歇)":1.0,
+    "臀桥臀部训练":2.0,
+    "引体向上(自重)":3.5
+}
+
+sport_music_categories = {
+    "💔极致伤感纯音乐":[
+        {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song‑05.mp3"},
+        {"name":"孤寂夜晚弦乐","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑06.mp3"},
+        {"name":"落寞抒情钢琴曲","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑07.mp3"},
+    ],
+    "💌伤感抒情氛围":[
+        {"name":"温柔遗憾旋律","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑08.mp3"},
+        {"name":"怀旧往事氛围感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑09.mp3"},
+    ],
+    "🔥励志热血BGM":[
+        {"name":"向前拼搏力量感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑02.mp3"},
+        {"name":"冲破困境激昂","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑04.mp3"},
+    ],
+    "🧘人生哲理·沉静思考":[
+        {"name":"安静沉思","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑03.mp3"},
+        {"name":"释然平静","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑01.mp3"},
+    ]
+}
+
+wisdom_quotes = [
+    "有些孤独只能自己消化，就像有些路只能一个人走。",
+    "好像拼尽全力，依旧留不住想要留住的人和事。",
+    "生活不会一直如意，但你可以一直努力。熬过低谷，一切都会慢慢变好。",
+    "不必纠结过往遗憾，过去无法改写，但未来仍然可以塑造。",
+    "真正的强大，不是从不跌倒，而是跌倒之后依然愿意站起来继续往前走。",
+    "人生很多事尽力就好，接受自己的普通，然后拼尽全力去与众不同。",
+    "时间会筛选身边的人和事，有些失去，其实是另一种解脱。",
+    "不要拿别人的标准，来否定自己的人生，每个人节奏本就不一样。",
+    "痛苦和难过都会有，但不能一直停留在悲伤里面，日子总要向前走。",
+    "所有看似毫不费力的背后，都是不为人知的坚持和汗水。",
+    "放下不属于你的执念，才能够腾出手拥抱属于你的美好。",
+    "允许自己偶尔脆弱，但不要沉溺悲伤；哭过之后，请继续好好生活。",
+    "人生没有白走的路，每一步经历，都在塑造现在的你。",
+    "比起结果，成长本身，才是人生最重要的礼物。",
+    "世界很喧闹，偶尔留给自己一点安静，和自己和解。"
+]
+
+if "timer_running" not in st.session_state:
+    st.session_state.timer_running = False
+if "timer_seconds" not in st.session_state:
+    st.session_state.timer_seconds = 0
+
+def format_time(sec_total):
+    h = int(sec_total // 3600)
+    m = int((sec_total % 3600)//60)
+    s = int(sec_total % 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
 def calc_sport_cal(sport_name, weight_kg, minute):
     met = sport_map[sport_name]
     hour = minute / 60
@@ -189,7 +378,7 @@ def calc_sport_cal(sport_name, weight_kg, minute):
 # ========== DeepSeek文本接口 ==========
 def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
     avoid_text = f"**严禁使用以下食材：{','.join(avoid_list)}**，菜谱全程不能出现这些食材。" if avoid_list else ""
     prompt = f"""根据食材生成一份详细中式菜谱，严格按下面格式输出：
 【菜名】
@@ -201,7 +390,7 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
 要求：菜系：{cuisine}，口味风格：{taste}
 {avoid_text}
 可用食材：{ingredients}"""
-    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -213,8 +402,8 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
 def estimate_dish_calorie(dish_name, recipe_text):
     prompt = f"""下面是菜品【{dish_name}】的菜谱，请只输出估算总热量数值（单位大卡kcal），只返回数字，不要多余文字：
 {recipe_text}"""
-    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
+    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
     try:
         res = requests.post("https://api.deepseek.com/v1/chat/completions",headers=headers,json=payload,timeout=30)
         res.raise_for_status()
@@ -226,14 +415,14 @@ def estimate_dish_calorie(dish_name, recipe_text):
 
 def reverse_query_dish(dish_name, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
     prompt = f"""菜名：{dish_name}，{person_num}。{avoid_text}
 输出格式：
 【所需准备食材】
 【完整菜谱步骤】
 【营养参考（仅估算，不作医疗依据）】"""
-    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -244,7 +433,7 @@ def reverse_query_dish(dish_name, avoid_list, person_num):
 
 def random_generate_recipe(cuisine,taste,avoid_list,person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
     prompt = f"""随机生成一道全新家常菜，菜系{cuisine}，口味{taste}，{person_num}。{avoid_text}
 严格输出格式：
@@ -253,7 +442,7 @@ def random_generate_recipe(cuisine,taste,avoid_list,person_num):
 做法步骤：
 小贴士：
 🍱营养参考（仅估算，不作为医疗依据）"""
-    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -272,7 +461,7 @@ def extract_dish_name(text):
     except:
         return ""
 
-# ========== 图片生成（修复wanx‑v1） ==========
+# ========== 图片生成（wanx‑v1） ==========
 def gen_dish_image(dish_name, img_style):
     if not DASHSCOPE_API_KEY or not dish_name:
         return None
@@ -285,16 +474,16 @@ def gen_dish_image(dish_name, img_style):
     prompt = f"{style_map[img_style]}，菜品「{dish_name}」"
     headers = {
         "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
-        "Content-Type":"application/json",
-        "X-DashScope-Async":"enable"
+        "Content‑Type":"application/json",
+        "X‑DashScope‑Async":"enable"
     }
     body = {
-        "model":"wanx-v1",
+        "model":"wanx‑v1",
         "input":{"prompt":prompt},
         "parameters":{"size":"1024*1024","n":1}
     }
     try:
-        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",headers=headers,json=body,timeout=30)
+        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image‑synthesis",headers=headers,json=body,timeout=30)
         resp.raise_for_status()
         task_id = resp.json()["output"]["task_id"]
         for _ in range(60):
@@ -323,12 +512,12 @@ def download_img_from_url(url):
 # ========== 侧边栏开关 ==========
 with st.sidebar:
     st.header("⚙️设置")
-    enable_img = st.checkbox("开启菜品图片生成", value=False, help="Streamlit Cloud海外环境访问阿里云容易失败，关闭只生成文字菜谱")
+    enable_img = st.checkbox("开启菜品图片生成", value=False, help="海外平台容易失败，国内魔搭可开启")
 
 # ========== 主页面 ==========
 st.title("🍽️ YouKu AI食谱生成器")
 quote = random.choice(healing_quotes)
-st.markdown(f"<p style='text-align:center; color:#5b6b8c; font-size:18px'>{quote}</p>",unsafe_allow_html=True)
+st.markdown(f"<p style='text‑align:center; color:#b4bce0; font‑size:18px'>{quote}</p>",unsafe_allow_html=True)
 
 tab_main, tab_reverse, tab_history, tab_diet = st.tabs(["✨食材生成菜谱","🔍菜名反查食材","📚历史菜谱","📅每日饮食&热量计划"])
 
@@ -377,7 +566,7 @@ with tab_main:
             st.subheader("📖菜谱结果")
             st.markdown(recipe_out)
             st.code(recipe_out,language="markdown")
-            buf_txt = BytesIO(recipe_out.encode("utf-8"))
+            buf_txt = BytesIO(recipe_out.encode("utf‑8"))
             st.download_button("📄下载菜谱TXT",data=buf_txt,file_name=f"{dish_out}.txt",mime="text/plain")
         with col_b:
             st.subheader("🍽️菜品图片")
@@ -392,7 +581,7 @@ with tab_main:
                 else:
                     st.warning("图片生成失败")
             else:
-                st.info("图片功能已关闭，在侧边栏开启")
+                st.info("图片功能已关闭，侧边栏开启（国内魔搭环境可用）")
         if dish_out:
             save_recipe_to_db(dish_out,food_input,recipe_out,img_out)
             st.success("✅菜谱已保存进历史！")
@@ -415,7 +604,7 @@ with tab_reverse:
         with ca:
             st.markdown(rev_result)
             st.code(rev_result,language="markdown")
-            buf_rev = BytesIO(rev_result.encode("utf-8"))
+            buf_rev = BytesIO(rev_result.encode("utf‑8"))
             st.download_button("📄下载TXT",data=buf_rev,file_name=f"{rev_name}.txt")
         with cb:
             st.subheader("🍽️菜品图片")
@@ -455,7 +644,7 @@ with tab_history:
                     st.markdown(f"**原始输入食材：**{ing}")
                     st.markdown(content)
                     st.code(content,language="markdown")
-                    buf_h = BytesIO(content.encode("utf-8"))
+                    buf_h = BytesIO(content.encode("utf‑8"))
                     st.download_button("📄下载TXT",data=buf_h,file_name=f"{dish}.txt",key=f"htxt_{rid}")
                     if st.button(f"{star_text}切换收藏状态",key=f"fav_{rid}"):
                         toggle_favorite(rid)
@@ -471,8 +660,8 @@ with tab_history:
 
 with tab_diet:
     st.markdown("# 📅每日饮食计划 · 热量体重估算")
-    st.markdown("<p class='warning-notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    st.markdown("<p class='warning‑notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
+    today_str = datetime.now().strftime("%Y‑%m‑%d")
     st.info(f"📆今日日期：{today_str}")
 
     st.subheader("👤填写你的身体指标")
@@ -486,9 +675,9 @@ with tab_diet:
 
     act_map = {
         "久坐几乎不动":1.2,
-        "轻度活动(每周1-3次运动)":1.375,
-        "中度活动(每周3-5次)":1.55,
-        "高强度(每周6-7次)":1.725,
+        "轻度活动(每周1‑3次运动)":1.375,
+        "中度活动(每周3‑5次)":1.55,
+        "高强度(每周6‑7次)":1.725,
         "重体力劳动":1.9
     }
     act_sel = st.selectbox("日常身体活动水平",list(act_map.keys()))
@@ -520,14 +709,82 @@ with tab_diet:
                 total_intake += cal
         st.markdown(f"✅今日菜品总预估摄入热量：**{round(total_intake)} 大卡**")
         for item in plan_dish_data:
-            st.markdown(f"- {item['dish']}：{item['cal']} kcal")
+            st.markdown(f"‑ {item['dish']}：{item['cal']} kcal")
 
     st.divider()
     st.subheader("🏃今日运动记录")
+
+    with st.expander("🎵情绪音乐｜伤感｜励志｜人生感悟（点击展开）", expanded=False):
+        show_quote = random.choice(wisdom_quotes)
+        st.markdown(f"💡【今日人生感悟】\n> *{show_quote}*")
+        st.divider()
+        cat_sel = st.radio("选择音乐情绪分类", list(sport_music_categories.keys()), horizontal=True)
+        music_list = sport_music_categories[cat_sel]
+        sel_music_name = st.radio("选择曲目", [m["name"] for m in music_list], horizontal=True)
+        sel_url = next(x["url"] for x in music_list if x["name"] == sel_music_name)
+        st.audio(sel_url, format="audio/mpeg")
+        st.markdown("> 💡提示：浏览器需要允许音频播放，纯音乐规避版权防盗链。")
+
+    st.markdown("#### ⏱️内置运动秒表计时器")
+    col_t1, col_t2, col_t3, col_t4 = st.columns([1,1,1,1])
+    with col_t1:
+        btn_start = st.button("▶️ 开始计时", use_container_width=True)
+    with col_t2:
+        btn_pause = st.button("⏸️ 暂停计时", use_container_width=True)
+    with col_t3:
+        btn_reset = st.button("🔄 重置计时器", use_container_width=True)
+    with col_t4:
+        btn_apply = st.button("✅把计时结果填入运动时长", use_container_width=True)
+
+    if btn_start:
+        st.session_state.timer_running = True
+    if btn_pause:
+        st.session_state.timer_running = False
+    if btn_reset:
+        st.session_state.timer_running = False
+        st.session_state.timer_seconds = 0
+
+    if st.session_state.timer_running:
+        st.session_state.timer_seconds +=1
+        time_lib.sleep(1)
+        st.rerun()
+
+    st.info(f"计时当前：**{format_time(st.session_state.timer_seconds)}**")
+    timer_minutes = round(st.session_state.timer_seconds / 60, 1)
+
     sport_sel = st.selectbox("选择运动类型", list(sport_map.keys()))
-    sport_min = st.number_input("运动时长(分钟)",min_value=0,max_value=300,value=30)
-    sport_cal = calc_sport_cal(sport_sel, weight_in, sport_min)
+    is_support_count_mode = sport_sel in countable_sports
+
+    if is_support_count_mode:
+        calc_mode = st.radio("热量计算模式", ["⏱️按运动时长(分钟)", "🔢按组数计数(适合徒手动作)"], horizontal=True)
+    else:
+        calc_mode = "⏱️按运动时长(分钟)"
+        st.info("该运动不支持组数模式，请使用运动时长计算")
+
+    sport_cal = 0.0
+    sport_min = 0
+
+    if calc_mode == "⏱️按运动时长(分钟)":
+        sport_min = st.number_input("运动时长(分钟)",min_value=0,max_value=300,value=timer_minutes)
+        sport_cal = calc_sport_cal(sport_sel, weight_in, sport_min)
+        if btn_apply:
+            sport_min = timer_minutes
+            st.toast(f"已填入计时时长 {timer_minutes} 分钟")
+    else:
+        col_g1,col_g2 = st.columns(2)
+        with col_g1:
+            per_group = st.number_input("每组数量(个/秒)", min_value=1, max_value=200, value=20)
+        with col_g2:
+            group_cnt = st.number_input("完成组数", min_value=1, max_value=50, value=3)
+        total_unit = per_group * group_cnt
+        sec_per = action_sec_per_unit[sport_sel]
+        total_sec = total_unit * sec_per
+        sport_min = round(total_sec / 60,1)
+        st.markdown(f"✅总数量：{total_unit} ｜等效运动时长：**{sport_min} 分钟**")
+        sport_cal = calc_sport_cal(sport_sel, weight_in, sport_min)
+
     st.markdown(f"✅本次运动预估消耗：**{sport_cal} 大卡**")
+    st.info("⚠️运动热量仅为模型估算，受动作标准、间歇休息、个人体能影响，仅供参考。")
 
     st.divider()
     st.subheader("📊今日热量分析报告")
@@ -535,10 +792,10 @@ with tab_diet:
     total_out = total_body_daily + sport_cal
     net_cal = total_intake - total_out
 
-    st.markdown(f"- 身体日常消耗(TDEE)：{total_body_daily} kcal")
-    st.markdown(f"- 运动额外消耗：{sport_cal} kcal")
-    st.markdown(f"- 今日吃进去总热量：{total_intake} kcal")
-    st.markdown(f"> 📌净热量(摄入-总消耗)：**{round(net_cal)} kcal**")
+    st.markdown(f"‑ 身体日常消耗(TDEE)：{total_body_daily} kcal")
+    st.markdown(f"‑ 运动额外消耗：{sport_cal} kcal")
+    st.markdown(f"‑ 今日吃进去总热量：{total_intake} kcal")
+    st.markdown(f"> 📌净热量(摄入‑总消耗)：**{round(net_cal)} kcal**")
 
     FAT_KG_CAL = 7700
     if net_cal > 0:
@@ -558,7 +815,7 @@ with tab_diet:
 
     st.divider()
     st.subheader("📂读取某天保存过的计划")
-    read_date = st.text_input("输入日期读取(格式2026-09-10)",today_str)
+    read_date = st.text_input("输入日期读取(格式2026‑09‑10)",today_str)
     if st.button("🔍读取记录"):
         row = get_diet_plan_by_date(read_date)
         if row:
@@ -571,4 +828,4 @@ with tab_diet:
             st.info("该日期没有保存计划记录")
 
 # 页脚作者
-st.markdown("<br><hr><p style='text-align:center; color:#5b6b8c;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text‑align:center; color:#b4bce0;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
