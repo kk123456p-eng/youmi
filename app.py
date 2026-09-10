@@ -26,48 +26,51 @@ healing_quotes = [
     "享受下厨，享受属于你的时光✨"
 ]
 
-# ✅【龙族·路明非雨夜伤感全屏背景CSS】
+# ✅龙族路明非 动态流动伤感黑夜星云动画背景（纯CSS无图片，海外Streamlit‑Cloud可用）
 custom_css = """
 <style>
-[data-testid="stAppViewContainer"] > .main {
-    /* 雨夜都市 路明非孤独氛围感 */
-    background-image: url("https://p3-flow-image-sign.byteimg.com/tos-cn-i-a9rns2rl98/34220103093b40389212442411402311~tplv-a9rns2rl98-image.image");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-color: rgba(8, 10, 22, 0.72);
-    background-blend-mode: multiply;
+@keyframes sadNightFlow {
+    0% { background‑position: 0% 0%; }
+    50% { background‑position: 100% 100%; }
+    100% { background‑position: 0% 0%; }
+}
+
+[data‑testid="stAppViewContainer"] > .main {
+    background: linear-gradient(-45deg, #0b0e22, #141833, #1b1f42, #10142c);
+    background‑size: 300% 300%;
+    animation: sadNightFlow 22s ease‑in‑out infinite;
+    background‑attachment: fixed;
     color:#e0e4f8;
 }
 .stApp {
     color:#e0e4f8;
 }
-.block-container {
-    padding-top: 2rem;
-    max-width:1050px;
+.block‑container {
+    padding‑top: 2rem;
+    max‑width:1050px;
 }
-.warning-notice{color:#ff8888; font-weight:bold;}
-div[data-testid="stExpander"]{
-    background-color: rgba(24, 28, 48, 0.58) !important;
-    backdrop-filter: blur(5px);
+.warning‑notice{color:#ff8888; font‑weight:bold;}
+div[data‑testid="stExpander"]{
+    background‑color: rgba(26, 30, 58, 0.54) !important;
+    backdrop‑filter: blur(6px);
+    border: 1px solid rgba(100,110,170,0.16);
 }
-div[data-testid="stVerticalBlock"]{
+div[data‑testid="stVerticalBlock"]{
     gap:0.7rem;
 }
 .stMarkdown h1,.stMarkdown h2,.stMarkdown h3{
     color:#c7cdf7 !important;
 }
-[data-testid="stSidebar"] {
-    background-color: rgba(16,19,36,0.68);
+[data‑testid="stSidebar"] {
+    background‑color: rgba(12,15,32,0.64);
 }
 .stButton>button {
-    background-color: rgba(60,70,110,0.65);
+    background‑color: rgba(50,60,108,0.60);
     color:#e6e9ff;
-    border:1px solid #707cb8;
+    border:1px solid #606cad;
 }
 .stButton>button:hover {
-    background-color: rgba(90,100,160,0.8);
+    background‑color: rgba(74,84,144,0.76);
 }
 </style>
 """
@@ -75,10 +78,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # 读取密钥
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
-if "DASHSCOPE_API_KEY" in st.secrets:
-    DASHSCOPE_API_KEY = st.secrets["DASHSCOPE_API_KEY"]
-else:
-    DASHSCOPE_API_KEY = ""
+DASHSCOPE_API_KEY = st.secrets.get("DASHSCOPE_API_KEY", "")
 
 # ========== 数据库 ==========
 def init_db():
@@ -315,7 +315,6 @@ action_sec_per_unit = {
     "引体向上(自重)":3.5
 }
 
-# ✅全套音乐库：伤感、抒情、励志、沉静思考
 sport_music_categories = {
     "💔极致伤感纯音乐":[
         {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-05.mp3"},
@@ -336,7 +335,6 @@ sport_music_categories = {
     ]
 }
 
-# ✅伤感/人生语录（适配路明非孤独情绪）
 wisdom_quotes = [
     "有些孤独只能自己消化，就像有些路只能一个人走。",
     "好像拼尽全力，依旧留不住想要留住的人和事。",
@@ -375,7 +373,7 @@ def calc_sport_cal(sport_name, weight_kg, minute):
 # ========== DeepSeek文本接口 ==========
 def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     avoid_text = f"**严禁使用以下食材：{','.join(avoid_list)}**，菜谱全程不能出现这些食材。" if avoid_list else ""
     prompt = f"""根据食材生成一份详细中式菜谱，严格按下面格式输出：
 【菜名】
@@ -387,7 +385,7 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
 要求：菜系：{cuisine}，口味风格：{taste}
 {avoid_text}
 可用食材：{ingredients}"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -399,8 +397,8 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
 def estimate_dish_calorie(dish_name, recipe_text):
     prompt = f"""下面是菜品【{dish_name}】的菜谱，请只输出估算总热量数值（单位大卡kcal），只返回数字，不要多余文字：
 {recipe_text}"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     try:
         res = requests.post("https://api.deepseek.com/v1/chat/completions",headers=headers,json=payload,timeout=30)
         res.raise_for_status()
@@ -412,14 +410,14 @@ def estimate_dish_calorie(dish_name, recipe_text):
 
 def reverse_query_dish(dish_name, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
     prompt = f"""菜名：{dish_name}，{person_num}。{avoid_text}
 输出格式：
 【所需准备食材】
 【完整菜谱步骤】
 【营养参考（仅估算，不作医疗依据）】"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -430,7 +428,7 @@ def reverse_query_dish(dish_name, avoid_list, person_num):
 
 def random_generate_recipe(cuisine,taste,avoid_list,person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content‑Type":"application/json"}
+    headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
     avoid_text = f"禁止使用食材：{','.join(avoid_list)}" if avoid_list else ""
     prompt = f"""随机生成一道全新家常菜，菜系{cuisine}，口味{taste}，{person_num}。{avoid_text}
 严格输出格式：
@@ -439,7 +437,7 @@ def random_generate_recipe(cuisine,taste,avoid_list,person_num):
 做法步骤：
 小贴士：
 🍱营养参考（仅估算，不作为医疗依据）"""
-    payload = {"model":"deepseek‑chat","messages":[{"role":"user","content":prompt}]}
+    payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
     try:
         res = requests.post(url,headers=headers,json=payload,timeout=45)
         res.raise_for_status()
@@ -471,16 +469,16 @@ def gen_dish_image(dish_name, img_style):
     prompt = f"{style_map[img_style]}，菜品「{dish_name}」"
     headers = {
         "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
-        "Content‑Type":"application/json",
-        "X‑DashScope‑Async":"enable"
+        "Content-Type":"application/json",
+        "X-DashScope-Async":"enable"
     }
     body = {
-        "model":"wanx‑v1",
+        "model":"wanx-v1",
         "input":{"prompt":prompt},
         "parameters":{"size":"1024*1024","n":1}
     }
     try:
-        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image‑synthesis",headers=headers,json=body,timeout=30)
+        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",headers=headers,json=body,timeout=30)
         resp.raise_for_status()
         task_id = resp.json()["output"]["task_id"]
         for _ in range(20):
@@ -514,7 +512,7 @@ with st.sidebar:
 # ========== 主页面 ==========
 st.title("🍽️ YouKu AI食谱生成器")
 quote = random.choice(healing_quotes)
-st.markdown(f"<p style='text‑align:center; color:#b4bce0; font‑size:18px'>{quote}</p>",unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; color:#b4bce0; font-size:18px'>{quote}</p>",unsafe_allow_html=True)
 
 tab_main, tab_reverse, tab_history, tab_diet = st.tabs(["✨食材生成菜谱","🔍菜名反查食材","📚历史菜谱","📅每日饮食&热量计划"])
 
@@ -563,7 +561,7 @@ with tab_main:
             st.subheader("📖菜谱结果")
             st.markdown(recipe_out)
             st.code(recipe_out,language="markdown")
-            buf_txt = BytesIO(recipe_out.encode("utf‑8"))
+            buf_txt = BytesIO(recipe_out.encode("utf-8"))
             st.download_button("📄下载菜谱TXT",data=buf_txt,file_name=f"{dish_out}.txt",mime="text/plain")
         with col_b:
             st.subheader("🍽️菜品图片")
@@ -601,7 +599,7 @@ with tab_reverse:
         with ca:
             st.markdown(rev_result)
             st.code(rev_result,language="markdown")
-            buf_rev = BytesIO(rev_result.encode("utf‑8"))
+            buf_rev = BytesIO(rev_result.encode("utf-8"))
             st.download_button("📄下载TXT",data=buf_rev,file_name=f"{rev_name}.txt")
         with cb:
             st.subheader("🍽️菜品图片")
@@ -641,7 +639,7 @@ with tab_history:
                     st.markdown(f"**原始输入食材：**{ing}")
                     st.markdown(content)
                     st.code(content,language="markdown")
-                    buf_h = BytesIO(content.encode("utf‑8"))
+                    buf_h = BytesIO(content.encode("utf-8"))
                     st.download_button("📄下载TXT",data=buf_h,file_name=f"{dish}.txt",key=f"htxt_{rid}")
                     if st.button(f"{star_text}切换收藏状态",key=f"fav_{rid}"):
                         toggle_favorite(rid)
@@ -657,8 +655,8 @@ with tab_history:
 
 with tab_diet:
     st.markdown("# 📅每日饮食计划 · 热量体重估算")
-    st.markdown("<p class='warning‑notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
-    today_str = datetime.now().strftime("%Y‑%m‑%d")
+    st.markdown("<p class='warning-notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
+    today_str = datetime.now().strftime("%Y-%m-%d")
     st.info(f"📆今日日期：{today_str}")
 
     st.subheader("👤填写你的身体指标")
@@ -711,7 +709,6 @@ with tab_diet:
     st.divider()
     st.subheader("🏃今日运动记录")
 
-    # ========= 🎵音乐板块【完整保留】 =========
     with st.expander("🎵情绪音乐｜伤感｜励志｜人生感悟（点击展开）", expanded=False):
         show_quote = random.choice(wisdom_quotes)
         st.markdown(f"💡【今日人生感悟】\n> *{show_quote}*")
@@ -723,7 +720,6 @@ with tab_diet:
         st.audio(sel_url, format="audio/mpeg")
         st.markdown("> 💡提示：浏览器需要允许音频播放，纯音乐规避版权防盗链。")
 
-    # ========= ⏱️运动计时器 =========
     st.markdown("#### ⏱️内置运动秒表计时器")
     col_t1, col_t2, col_t3, col_t4 = st.columns([1,1,1,1])
     with col_t1:
@@ -827,4 +823,4 @@ with tab_diet:
             st.info("该日期没有保存计划记录")
 
 # 页脚作者
-st.markdown("<br><hr><p style='text‑align:center; color:#b4bce0;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align:center; color:#b4bce0;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
