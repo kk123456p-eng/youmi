@@ -26,47 +26,48 @@ healing_quotes = [
     "享受下厨，享受属于你的时光✨"
 ]
 
-# 【路明非 龙族雨夜伤感背景｜Streamlit‑Cloud海外可用】
+# ✅【龙族·路明非雨夜伤感全屏背景CSS】
 custom_css = """
 <style>
 [data-testid="stAppViewContainer"] > .main {
-    background-image: url("https://p3‑flow‑image‑sign.byteimg.com/tos‑cn‑i‑a9rns2rl98/34220103093b40389212442411402311~tplv‑a9rns2rl98‑image.image");
-    background‑size: cover;
-    background‑position: center;
-    background‑repeat: no‑repeat;
-    background‑attachment: fixed;
-    background‑color: rgba(8, 10, 22, 0.72);
-    background‑blend‑mode: multiply;
+    /* 雨夜都市 路明非孤独氛围感 */
+    background-image: url("https://p3-flow-image-sign.byteimg.com/tos-cn-i-a9rns2rl98/34220103093b40389212442411402311~tplv-a9rns2rl98-image.image");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: rgba(8, 10, 22, 0.72);
+    background-blend-mode: multiply;
     color:#e0e4f8;
 }
 .stApp {
     color:#e0e4f8;
 }
-.block‑container {
-    padding‑top: 2rem;
-    max‑width:1050px;
+.block-container {
+    padding-top: 2rem;
+    max-width:1050px;
 }
-.warning‑notice{color:#ff8888; font‑weight:bold;}
-div[data‑testid="stExpander"]{
-    background‑color: rgba(24, 28, 48, 0.58) !important;
-    backdrop‑filter: blur(5px);
+.warning-notice{color:#ff8888; font-weight:bold;}
+div[data-testid="stExpander"]{
+    background-color: rgba(24, 28, 48, 0.58) !important;
+    backdrop-filter: blur(5px);
 }
-div[data‑testid="stVerticalBlock"]{
+div[data-testid="stVerticalBlock"]{
     gap:0.7rem;
 }
 .stMarkdown h1,.stMarkdown h2,.stMarkdown h3{
     color:#c7cdf7 !important;
 }
-[data‑testid="stSidebar"] {
-    background‑color: rgba(16,19,36,0.68);
+[data-testid="stSidebar"] {
+    background-color: rgba(16,19,36,0.68);
 }
 .stButton>button {
-    background‑color: rgba(60,70,110,0.65);
+    background-color: rgba(60,70,110,0.65);
     color:#e6e9ff;
     border:1px solid #707cb8;
 }
 .stButton>button:hover {
-    background‑color: rgba(90,100,160,0.8);
+    background-color: rgba(90,100,160,0.8);
 }
 </style>
 """
@@ -74,7 +75,6 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # 读取密钥
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
-# 海外平台不要开启图片，DASHSCOPE_API_KEY可保留不删除
 if "DASHSCOPE_API_KEY" in st.secrets:
     DASHSCOPE_API_KEY = st.secrets["DASHSCOPE_API_KEY"]
 else:
@@ -206,7 +206,6 @@ def calc_tdee(bmr, activity_factor):
     return round(bmr * activity_factor,1)
 
 sport_map = {
-    # ========= 步行 / 跑步类 =========
     "慢走(4km/h)":3.3,
     "快走(5‑6km/h)":3.8,
     "健走(6.5km/h)":5.0,
@@ -215,8 +214,6 @@ sport_map = {
     "快跑12km/h":12.5,
     "爬楼梯上楼":8.0,
     "下楼梯":3.5,
-
-    # ========= 骑行 =========
     "休闲骑行(平地)":4.5,
     "中等速度骑行":6.8,
     "快速公路骑行":8.5,
@@ -224,21 +221,15 @@ sport_map = {
     "动感单车‑低强度":3.5,
     "动感单车‑中强度":6.8,
     "动感单车‑高强度间歇":11.0,
-
-    # ========= 游泳全系列 =========
     "踩水休闲":4.0,
     "慢速仰泳/自由泳":5.8,
     "中速自由泳":8.0,
     "蛙泳普通速度":10.0,
     "快速自由泳":11.0,
     "蝶泳":13.8,
-
-    # ========= 跳绳 =========
     "慢速跳绳":8.8,
     "中速跳绳":11.8,
     "快速高强度跳绳":12.0,
-
-    # ========= 自重居家训练 =========
     "俯卧撑(普通节奏带休息)":3.8,
     "俯卧撑(快速高强度连续)":6.0,
     "仰卧起坐(普通速度)":4.0,
@@ -249,21 +240,15 @@ sport_map = {
     "自重深蹲(快速间歇)":6.2,
     "臀桥臀部训练":3.6,
     "引体向上(自重)":8.0,
-
-    # ========= 力量抗阻训练 =========
     "轻度力量训练(慢节奏，休息久)":3.5,
     "中等力量训练(哑铃/器械常规)":5.0,
     "大重量力量训练(增肌，短休息)":6.0,
     "大强度力量间歇训练":7.5,
-
-    # ========= HIIT、Tabata =========
     "HIIT高强度间歇训练":9.5,
     "Tabata塔巴塔训练":11.0,
     "战绳训练":8.0,
     "波比跳Burpee训练":8.0,
     "开合跳间歇训练":8.0,
-
-    # ========= 瑜伽 / 普拉提 / 传统国术 =========
     "哈他瑜伽(舒缓放松)":2.5,
     "流瑜伽(动态)":4.0,
     "空中瑜伽":5.5,
@@ -272,8 +257,6 @@ sport_map = {
     "八段锦":3.2,
     "24式太极拳":3.5,
     "五禽戏":3.3,
-
-    # ========= 舞蹈 / 广场舞 /健身操 =========
     "慢舞休闲":3.0,
     "中速舞蹈":4.5,
     "拉丁舞":5.8,
@@ -282,8 +265,6 @@ sport_map = {
     "第九套广播体操":5.1,
     "初级有氧健身操":7.3,
     "高级有氧健身操":9.0,
-
-    # ========= 球类运动 =========
     "乒乓球休闲":4.0,
     "羽毛球休闲娱乐":4.5,
     "羽毛球比赛对抗":7.0,
@@ -295,23 +276,15 @@ sport_map = {
     "排球比赛对抗":8.0,
     "足球休闲玩耍":7.0,
     "足球正式比赛":10.0,
-
-    # ========= 户外登山徒步 =========
     "平路徒步":4.0,
     "中等坡度爬山":6.0,
     "陡坡登山背包负重":8.0,
-
-    # ========= 健身房器械其他 =========
     "椭圆机‑中等强度":5.5,
     "椭圆机‑高强度":7.2,
     "划船机‑中等":5.8,
     "划船机‑高强度":8.0,
-
-    # ========= 格斗搏击 =========
     "拳击沙袋练习":8.0,
     "散打搏击训练":9.0,
-
-    # ========= 居家家务 =========
     "拖地擦地家务":3.3,
     "搬轻重物做家务":4.5
 }
@@ -342,26 +315,28 @@ action_sec_per_unit = {
     "引体向上(自重)":3.5
 }
 
+# ✅全套音乐库：伤感、抒情、励志、沉静思考
 sport_music_categories = {
     "💔极致伤感纯音乐":[
-        {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑05.mp3"},
-        {"name":"孤寂夜晚弦乐","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑06.mp3"},
-        {"name":"落寞抒情钢琴曲","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑07.mp3"},
+        {"name":"忧伤回忆钢琴","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-05.mp3"},
+        {"name":"孤寂夜晚弦乐","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-06.mp3"},
+        {"name":"落寞抒情钢琴曲","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-07.mp3"},
     ],
     "💌伤感抒情氛围":[
-        {"name":"温柔遗憾旋律","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑08.mp3"},
-        {"name":"怀旧往事氛围感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑09.mp3"},
+        {"name":"温柔遗憾旋律","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-08.mp3"},
+        {"name":"怀旧往事氛围感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-09.mp3"},
     ],
     "🔥励志热血BGM":[
-        {"name":"向前拼搏力量感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑02.mp3"},
-        {"name":"冲破困境激昂","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑04.mp3"},
+        {"name":"向前拼搏力量感","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-02.mp3"},
+        {"name":"冲破困境激昂","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-04.mp3"},
     ],
     "🧘人生哲理·沉静思考":[
-        {"name":"安静沉思","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑03.mp3"},
-        {"name":"释然平静","url":"https://www.soundhelix.com/examples/mp3/SoundHelix‑Song‑01.mp3"},
+        {"name":"安静沉思","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-03.mp3"},
+        {"name":"释然平静","url":"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-01.mp3"},
     ]
 }
 
+# ✅伤感/人生语录（适配路明非孤独情绪）
 wisdom_quotes = [
     "有些孤独只能自己消化，就像有些路只能一个人走。",
     "好像拼尽全力，依旧留不住想要留住的人和事。",
@@ -483,7 +458,7 @@ def extract_dish_name(text):
     except:
         return ""
 
-# ========== 图片生成（海外平台默认关闭，打开会网络报错） ==========
+# ========== 图片生成（海外平台默认关闭） ==========
 def gen_dish_image(dish_name, img_style):
     if not DASHSCOPE_API_KEY or not dish_name:
         return None
@@ -736,6 +711,7 @@ with tab_diet:
     st.divider()
     st.subheader("🏃今日运动记录")
 
+    # ========= 🎵音乐板块【完整保留】 =========
     with st.expander("🎵情绪音乐｜伤感｜励志｜人生感悟（点击展开）", expanded=False):
         show_quote = random.choice(wisdom_quotes)
         st.markdown(f"💡【今日人生感悟】\n> *{show_quote}*")
@@ -747,6 +723,7 @@ with tab_diet:
         st.audio(sel_url, format="audio/mpeg")
         st.markdown("> 💡提示：浏览器需要允许音频播放，纯音乐规避版权防盗链。")
 
+    # ========= ⏱️运动计时器 =========
     st.markdown("#### ⏱️内置运动秒表计时器")
     col_t1, col_t2, col_t3, col_t4 = st.columns([1,1,1,1])
     with col_t1:
