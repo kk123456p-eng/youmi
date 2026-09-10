@@ -9,7 +9,7 @@ import time as time_lib
 
 # ========== 页面全局配置 ==========
 st.set_page_config(
-    page_title="YouKu AI食谱生成器",
+    page_title="YouKu",
     page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="collapsed"
