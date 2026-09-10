@@ -46,11 +46,10 @@ st.markdown(custom_css, unsafe_allow_html=True)
 DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
 DASHSCOPE_API_KEY = st.secrets["DASHSCOPE_API_KEY"]
 
-# ========== 数据库（原有recipes + 新增diet_plan饮食计划表） ==========
+# ========== 数据库 ==========
 def init_db():
     conn = sqlite3.connect("youku_recipe.db")
     c = conn.cursor()
-    # 菜谱表
     c.execute('''CREATE TABLE IF NOT EXISTS recipes
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   dish_name TEXT,
@@ -59,7 +58,6 @@ def init_db():
                   image_url TEXT,
                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   is_favorite INTEGER DEFAULT 0)''')
-    # 新增饮食计划表
     c.execute('''CREATE TABLE IF NOT EXISTS diet_plan (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         plan_date TEXT,
@@ -77,7 +75,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# =========【重点】初始化数据库，提前建表！！=========
 init_db()
 
 def save_recipe_to_db(dish_name, ingredients, recipe_content, image_url):
@@ -117,7 +114,6 @@ def clear_all_recipes():
     conn.commit()
     conn.close()
 
-# 饮食计划数据库操作
 def save_diet_plan(plan_date, gender, height, weight, age, activity_level, dish_list, total_intake_cal, total_sport_cal, note):
     conn = sqlite3.connect("youku_recipe.db")
     c = conn.cursor()
@@ -136,7 +132,7 @@ def get_diet_plan_by_date(target_date):
     conn.close()
     return row
 
-# ========== Dialog弹窗组件 ==========
+# ========== Dialog弹窗 ==========
 @st.dialog("⚠️确认删除单条菜谱")
 def dialog_delete_one(rid, dish):
     st.write(f"确定删除菜谱：**{dish}**？操作不可撤销！")
@@ -164,7 +160,7 @@ def dialog_clear_all():
             st.toast("✅全部历史菜谱已清空")
             st.rerun()
 
-# ========== 工具函数：BMR、TDEE、运动消耗计算 ==========
+# ========== 身体热量计算工具 ==========
 def calc_bmr(gender, height_cm, weight_kg, age):
     if gender == "男":
         bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
@@ -184,14 +180,13 @@ sport_map = {
     "力量健身训练":6.5,
     "瑜伽":3.0
 }
-# MET公式：消耗kcal = MET × 体重kg × 时间小时
 def calc_sport_cal(sport_name, weight_kg, minute):
     met = sport_map[sport_name]
     hour = minute / 60
     cal = met * weight_kg * hour
     return round(cal,1)
 
-# ========== DeepSeek接口函数 ==========
+# ========== DeepSeek文本接口 ==========
 def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
     url = "https://api.deepseek.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type":"application/json"}
@@ -216,7 +211,6 @@ def generate_recipe(ingredients, taste, cuisine, avoid_list, person_num):
         return None
 
 def estimate_dish_calorie(dish_name, recipe_text):
-    '''AI估算一道菜的热量'''
     prompt = f"""下面是菜品【{dish_name}】的菜谱，请只输出估算总热量数值（单位大卡kcal），只返回数字，不要多余文字：
 {recipe_text}"""
     payload = {"model":"deepseek-chat","messages":[{"role":"user","content":prompt}]}
@@ -278,7 +272,7 @@ def extract_dish_name(text):
     except:
         return ""
 
-# ========== 图片生成API ==========
+# ========== 图片生成（修复wanx‑v1） ==========
 def gen_dish_image(dish_name, img_style):
     if not DASHSCOPE_API_KEY or not dish_name:
         return None
@@ -294,7 +288,11 @@ def gen_dish_image(dish_name, img_style):
         "Content-Type":"application/json",
         "X-DashScope-Async":"enable"
     }
-    body = {"model":"z-image-turbo","input":{"prompt":prompt},"parameters":{"size":"1024*1024","n":1}}
+    body = {
+        "model":"wanx-v1",
+        "input":{"prompt":prompt},
+        "parameters":{"size":"1024*1024","n":1}
+    }
     try:
         resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis",headers=headers,json=body,timeout=30)
         resp.raise_for_status()
@@ -322,6 +320,11 @@ def download_img_from_url(url):
     except:
         return None
 
+# ========== 侧边栏开关 ==========
+with st.sidebar:
+    st.header("⚙️设置")
+    enable_img = st.checkbox("开启菜品图片生成", value=False, help="Streamlit Cloud海外环境访问阿里云容易失败，关闭只生成文字菜谱")
+
 # ========== 主页面 ==========
 st.title("🍽️ YouKu AI食谱生成器")
 quote = random.choice(healing_quotes)
@@ -338,7 +341,7 @@ with tab_main:
         person_opt = st.selectbox("👨‍👩‍👧‍👦用餐人数",["1人份","2人份","3人份","4人份","5人份","6人份"])
     with c2:
         taste_opt = st.selectbox("🌶️口味",["清淡","微辣","重辣","酸甜","鲜香","咸香"])
-        img_style_opt = st.selectbox("🖼️图片风格",["写实实拍","ins美食风","日系清新","复古胶片"])
+        img_style_opt = st.selectbox("🖼️图片风格",["写实实拍","ins美食风","日系清新","复古胶片"], disabled=not enable_img)
 
     avoid_selected = st.multiselect("🚫过敏原/不吃食材黑名单",allergen_list)
     food_input = st.text_input("🥬输入食材，逗号隔开","土豆，牛肉，洋葱")
@@ -378,7 +381,7 @@ with tab_main:
             st.download_button("📄下载菜谱TXT",data=buf_txt,file_name=f"{dish_out}.txt",mime="text/plain")
         with col_b:
             st.subheader("🍽️菜品图片")
-            if dish_out:
+            if enable_img and dish_out:
                 with st.spinner("绘制菜品图片..."):
                     img_out = gen_dish_image(dish_out,img_style_opt)
                 if img_out:
@@ -388,7 +391,9 @@ with tab_main:
                         st.download_button("🖼️下载菜品图片",data=img_bytes,file_name=f"{dish_out}.jpg",mime="image/jpeg")
                 else:
                     st.warning("图片生成失败")
-        if dish_out and img_out:
+            else:
+                st.info("图片功能已关闭，在侧边栏开启")
+        if dish_out:
             save_recipe_to_db(dish_out,food_input,recipe_out,img_out)
             st.success("✅菜谱已保存进历史！")
 
@@ -397,7 +402,7 @@ with tab_reverse:
     rev_dish = st.text_input("请输入菜名，例如：红烧肉","红烧肉")
     rev_person = st.selectbox("👨‍👩‍👧‍👦用餐人数(反查)",["1人份","2人份","3人份","4人份","5人份","6人份"])
     rev_avoid = st.multiselect("🚫黑名单(反查)",allergen_list)
-    rev_img_style = st.selectbox("🖼️图片风格(反查)",["写实实拍","ins美食风","日系清新","复古胶片"])
+    rev_img_style = st.selectbox("🖼️图片风格(反查)",["写实实拍","ins美食风","日系清新","复古胶片"], disabled=not enable_img)
     if st.button("🔎开始查询",type="primary"):
         if not rev_dish.strip():
             st.warning("请输入菜名！")
@@ -413,7 +418,8 @@ with tab_reverse:
             buf_rev = BytesIO(rev_result.encode("utf-8"))
             st.download_button("📄下载TXT",data=buf_rev,file_name=f"{rev_name}.txt")
         with cb:
-            if rev_name:
+            st.subheader("🍽️菜品图片")
+            if enable_img and rev_name:
                 with st.spinner("生成图片..."):
                     rev_img = gen_dish_image(rev_name,rev_img_style)
                 if rev_img:
@@ -421,6 +427,10 @@ with tab_reverse:
                     rev_img_byte = download_img_from_url(rev_img)
                     if rev_img_byte:
                         st.download_button("🖼️下载图片",data=rev_img_byte,file_name=f"{rev_name}.jpg")
+                else:
+                    st.warning("图片生成失败")
+            else:
+                st.info("图片功能已关闭，在侧边栏开启")
 
 with tab_history:
     st.subheader("📚历史菜谱库")
@@ -451,14 +461,14 @@ with tab_history:
                         toggle_favorite(rid)
                         st.rerun()
                 with c_h2:
-                    st.image(imgurl,caption=dish,use_container_width=True)
-                    h_img_byte = download_img_from_url(imgurl)
-                    if h_img_byte:
-                        st.download_button("🖼️下载图片",data=h_img_byte,file_name=f"{dish}.jpg",key=f"himg_{rid}")
+                    if imgurl:
+                        st.image(imgurl,caption=dish,use_container_width=True)
+                        h_img_byte = download_img_from_url(imgurl)
+                        if h_img_byte:
+                            st.download_button("🖼️下载图片",data=h_img_byte,file_name=f"{dish}.jpg",key=f"himg_{rid}")
                 if st.button(f"🗑️删除这条 #{rid}",key=f"hdel_{rid}"):
                     dialog_delete_one(rid,dish)
 
-# ========== 新增：📅每日饮食&热量计划 Tab ==========
 with tab_diet:
     st.markdown("# 📅每日饮食计划 · 热量体重估算")
     st.markdown("<p class='warning-notice'>⚠️全部热量、体重变化仅AI估算，仅供娱乐参考，不能替代医生、营养师专业建议！</p>",unsafe_allow_html=True)
@@ -559,7 +569,6 @@ with tab_diet:
             st.markdown(f"菜品列表：{dishlist}")
         else:
             st.info("该日期没有保存计划记录")
-
 
 # 页脚作者
 st.markdown("<br><hr><p style='text-align:center; color:#5b6b8c;'>作者：youku❤youmi</p>",unsafe_allow_html=True)
